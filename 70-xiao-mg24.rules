@@ -1,0 +1,5 @@
+# Seeed Studio XIAO MG24 (Sense) CMSIS-DAP
+# Allows non-root access to the debug probe HID interface and serial port
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="2886", ATTRS{idProduct}=="0062", MODE="0666", GROUP="plugdev"
+SUBSYSTEM=="usb", ATTR{idVendor}=="2886", ATTR{idProduct}=="0062", MODE="0666", GROUP="plugdev"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="2886", ATTRS{idProduct}=="0062", MODE="0666", GROUP="dialout"
