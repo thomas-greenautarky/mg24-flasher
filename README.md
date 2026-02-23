@@ -119,6 +119,8 @@ Once EZSP is running, future updates can use `./gbl-upload.sh`.
 
 ## Included firmware
 
+The Zigbee NCP firmware is from the [silabs-firmware-builder](https://github.com/darkxst/silabs-firmware-builder) project ([releases](https://github.com/darkxst/silabs-firmware-builder/releases)).
+
 | File | Description | Method |
 |------|-------------|--------|
 | `Blink_MG24.hex` | LED blink example | `flash.sh` |
@@ -174,12 +176,34 @@ Unlike typical Gecko Bootloader configurations, the XIAO MG24's stock bootloader
 picocom -b 115200 /dev/ttyACM0
 ```
 
+## Firmware source
+
+The Zigbee NCP firmware included in this project comes from the [darkxst/silabs-firmware-builder](https://github.com/darkxst/silabs-firmware-builder) project, which provides pre-built Silicon Labs radio firmware for various boards. Pre-built `.gbl` files for the XIAO MG24 and other boards are available on the [releases page](https://github.com/darkxst/silabs-firmware-builder/releases).
+
+### UART and Raspberry Pi connectivity
+
+The stock NCP firmware is configured for **USART0 on PA8/PA9**, which is internally wired to the XIAO MG24's on-board SAMD11 USB bridge chip. The `/dev/ttyACM0` serial port is a **USB CDC virtual COM port** -- not a direct hardware UART.
+
+```
+Host/Pi (USB) <--USB CDC--> SAMD11 (board controller) <--USART0 (PA8/PA9)--> EFR32MG24
+```
+
+The **easiest way to use this with a Raspberry Pi** is to simply connect the XIAO MG24 via USB. It appears as `/dev/ttyACM0` and EZSP works immediately.
+
+The board's header TX/RX pins (D6/D7) use a **different peripheral** -- EUSART1 on PC6/PC7. To use direct UART wiring to a Pi's GPIO instead of USB, you would need to **rebuild the NCP firmware** (e.g. in Simplicity Studio or by forking [silabs-firmware-builder](https://github.com/darkxst/silabs-firmware-builder)) to route EZSP from USART0 to EUSART1.
+
+| UART | EFR32MG24 Pins | Peripheral | Destination |
+|------|---------------|------------|-------------|
+| Internal (NCP uses this) | PA8 (TX) / PA9 (RX) | USART0 | SAMD11 USB bridge |
+| Header TX0/RX0 (D6/D7) | PC6 (TX) / PC7 (RX) | EUSART1 | External GPIO pins |
+
 ## References
 
 - [Seeed XIAO MG24 Getting Started](https://wiki.seeedstudio.com/xiao_mg24_getting_started/)
 - [Seeed Debug Mate Guide](https://wiki.seeedstudio.com/xiao_debug_mate_debug/)
 - [pyocd](https://pyocd.io/)
 - [universal-silabs-flasher](https://github.com/NabuCasa/universal-silabs-flasher)
+- [silabs-firmware-builder](https://github.com/darkxst/silabs-firmware-builder) -- pre-built NCP firmware for XIAO MG24 and other boards ([releases](https://github.com/darkxst/silabs-firmware-builder/releases))
 - [Silicon Labs Gecko Bootloader User Guide (GSDK 4.0+)](https://www.silabs.com/documents/public/user-guides/ug489-gecko-bootloader-user-guide-gsdk-4.pdf)
 - [Silicon Labs EFR32MG24](https://www.silabs.com/wireless/zigbee/efr32mg24-series-2-socs)
 
@@ -232,6 +256,8 @@ Tried three approaches to upload `.gbl` files via serial:
 3. **pyocd reset + immediate serial probe** -- Reset via SWD, then immediately tried to catch the bootloader over serial. **Failed** -- the bootloader jumps to the app too fast and doesn't listen on UART.
 
 ### Solution: extract binary from .gbl, flash via SWD
+
+The Zigbee NCP `.gbl` firmware comes from the [silabs-firmware-builder](https://github.com/darkxst/silabs-firmware-builder) project ([releases](https://github.com/darkxst/silabs-firmware-builder/releases)), which provides pre-built firmware images for various Silicon Labs boards including the XIAO MG24.
 
 The `.gbl` format is a Gecko Bootloader container with (in this case) raw program data at specific flash addresses. Parsed the GBL file structure, extracted the raw binary data for the Zigbee NCP firmware, and saved it as a `.bin` file with the correct base address (`0x08006000`).
 
